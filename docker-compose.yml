@@ -1,0 +1,27 @@
+services:
+  warp-exit:
+    build: .
+    image: warp-tailscale-exit
+    container_name: warp-tailscale-exit
+    restart: unless-stopped
+    env_file: .env
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
+    volumes:
+      - warp-data:/var/lib/wgcf
+      - ts-data:/var/lib/tailscale
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  warp-data:
+  ts-data:
