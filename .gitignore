@@ -1,0 +1,10 @@
+# Secrets / local config — never commit
+.env
+
+# Runtime state (also lives in Docker named volumes)
+wgcf-account.toml
+wgcf-profile.conf
+*.state
+
+# OS noise
+.DS_Store

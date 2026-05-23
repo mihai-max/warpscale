@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 # Pin wgcf release (https://github.com/ViRb3/wgcf/releases)
-ARG WGCF_VERSION=2.2.27
+ARG WGCF_VERSION=2.2.31
 
 # Base tooling: WireGuard userspace tools, routing, NAT, TLS, sysctl, apt-key handling.
 RUN apt-get update \
@@ -36,7 +36,7 @@ RUN set -eux; \
     curl -fsSL "https://github.com/ViRb3/wgcf/releases/download/v${WGCF_VERSION}/wgcf_${WGCF_VERSION}_linux_${wgcf_arch}" \
         -o /usr/local/bin/wgcf; \
     chmod +x /usr/local/bin/wgcf; \
-    wgcf --version
+    wgcf help >/dev/null 2>&1
 
 COPY entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.sh
