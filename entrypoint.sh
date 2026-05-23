@@ -71,9 +71,30 @@ sed -i '/^[[:space:]]*[Dd][Nn][Ss][[:space:]]*=/d' "$WG_CONF"
 grep -qiE '^[[:space:]]*Table' "$WG_CONF" || sed -i '/^\[Interface\]/a Table = off' "$WG_CONF"
 grep -qiE '^[[:space:]]*MTU'   "$WG_CONF" || sed -i '/^\[Interface\]/a MTU = 1280'  "$WG_CONF"
 
-# ----- 5. enable forwarding -------------------------------------------------
-sysctl -w net.ipv4.ip_forward=1 >/dev/null
-sysctl -w net.ipv6.conf.all.forwarding=1 >/dev/null 2>&1 || log "ipv6 forwarding unavailable; continuing IPv4-only"
+# ----- 5. enable IP forwarding ----------------------------------------------
+# /proc/sys is read-only in a non-privileged container, so `sysctl -w` usually
+# fails; in that case the value must be supplied at run time with
+# `docker run --sysctl ...` (or via the `sysctls:` block in docker-compose.yml).
+# enable_forwarding succeeds if we can set it OR it is already on.
+enable_forwarding() {
+    # $1 = sysctl key, $2 = /proc path
+    sysctl -w "$1=1" >/dev/null 2>&1 && return 0
+    [ "$(cat "$2" 2>/dev/null || echo 0)" = "1" ]
+}
+
+if enable_forwarding net.ipv4.ip_forward /proc/sys/net/ipv4/ip_forward; then
+    log "IPv4 forwarding enabled"
+else
+    log "FATAL: net.ipv4.ip_forward is off and cannot be set from inside the container."
+    log "       Re-run with:  --sysctl net.ipv4.ip_forward=1   (already set in docker-compose.yml)"
+    exit 1
+fi
+
+if enable_forwarding net.ipv6.conf.all.forwarding /proc/sys/net/ipv6/conf/all/forwarding; then
+    log "IPv6 forwarding enabled"
+else
+    log "IPv6 forwarding unavailable; continuing IPv4-only"
+fi
 
 # ----- 6. bring up WARP -----------------------------------------------------
 log "bringing up WARP interface ($WG_IF)..."
